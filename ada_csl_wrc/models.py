@@ -715,19 +715,19 @@ class ConstrainedCSDecisionTree(BaseEstimator):
         #initialize the threshold
         threshold = 0.0
         effective_threshold = 1.0
-        lower_bound = 0.0
-        upper_bound = 1000.0 #Should be a big number, I don't know what is big enough
+        #lower_bound = 0.0
+        #upper_bound = 1000.0 #Should be a big number, I don't know what is big enough
         cfp = 0
 
         #High CFP increase the threshold and vice versa
-        while (effective_threshold > threshold) or (abs(upper_bound - lower_bound) > self.tolerance):
+        while (effective_threshold > threshold) #or (abs(upper_bound - lower_bound) > self.tolerance):
 
             print(
                 f"Threshold: {threshold:.2f}", 
                 f"Effective Threshold: {effective_threshold:.2f}", 
                 f"Cost False Positive: {cfp:.2f}", 
-                f"Lower Bound: {lower_bound:.2f}",
-                f"Upper Bound: {upper_bound:.2f}",
+                #f"Lower Bound: {lower_bound:.2f}",
+                #f"Upper Bound: {upper_bound:.2f}",
                 sep = " ", end="\r", flush=True)
             
             threshold = cfp/(cfp+cfn)
@@ -740,13 +740,15 @@ class ConstrainedCSDecisionTree(BaseEstimator):
             effective_threshold = find_effective_threshold(y_pred_train, self.constraint, threshold) 
 
             #The binary search, if we overshot, we need to decrease cfp
-            if effective_threshold <= threshold: #It means we have found a good cfp, but might not be the best
-                upper_bound = cfp
-                cfp = (cfp+lower_bound)/2
+            # if effective_threshold <= threshold: #It means we have found a good cfp, but might not be the best
+            #     upper_bound = cfp
+            #     cfp = (cfp+lower_bound)/2
                       
-            else: #We undershot, we need to increase cfp
-                lower_bound = cfp
-                cfp = (cfp+upper_bound)/2
+            # else: #We undershot, we need to increase cfp
+            #     lower_bound = cfp
+            #     cfp = (cfp+upper_bound)/2
+            epsilon = np.exp(-(threshold- effective_threshold)/(threshold*(1-threshold)))
+            cfp = cfp * epsilon
             
         self.best_model_ = deepcopy(model_i) #This one is already trained.
         self.cfp_ = cfp
@@ -756,8 +758,8 @@ class ConstrainedCSDecisionTree(BaseEstimator):
         print(f"Threshold: {threshold:.2f}")
         print(f"Effective threshold: {effective_threshold:.2f}")
         print("Current cfp: ", cfp)
-        print("Lower bound: ", lower_bound)
-        print("Upper bound: ", upper_bound)
+        #print("Lower bound: ", lower_bound)
+        #print("Upper bound: ", upper_bound)
         return self
             
         # for cfp in [0.0001, 50]: #TODO: Use a better searching mechanism than brute force.
